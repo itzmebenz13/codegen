@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shein Script Generator</title>
+    <title>Shein Script Generator v3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: #e2e8f0; font-family: 'Courier New', Courier, monospace; }
         .input-area { background-color: #1e293b; border-color: #334155; }
         .btn { transition: all 0.2s; }
         .btn:active { transform: scale(0.98); }
-        /* Custom scrollbar */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
 <body class="h-screen flex flex-col p-4 overflow-hidden">
@@ -22,8 +20,8 @@
     <!-- Header -->
     <header class="mb-4 flex justify-between items-center shrink-0">
         <div>
-            <h1 class="text-2xl font-bold text-emerald-400">SHEIN SCRIPT GEN <span class="text-xs text-gray-500">v2.0</span></h1>
-            <p class="text-xs text-gray-400">Paste Raw HTTP Request &rarr; Get Configured Script</p>
+            <h1 class="text-2xl font-bold text-emerald-400">SHEIN SCRIPT GEN <span class="text-xs text-gray-500">v3.0 (Direct Mode)</span></h1>
+            <p class="text-xs text-gray-400">Fixes "Error when requesting parameter" by skipping login</p>
         </div>
         <button onclick="generateScript()" class="btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-6 rounded shadow-lg shadow-emerald-900/50">
             GENERATE CODE
@@ -32,14 +30,13 @@
 
     <!-- Main Layout -->
     <div class="flex flex-1 gap-4 min-h-0">
-        
         <!-- Left: Input -->
         <div class="flex-1 flex flex-col min-w-0">
-            <label class="text-sm font-bold text-gray-400 mb-2 block">PASTE RAW REQUEST HERE (Headers + Body):</label>
+            <label class="text-sm font-bold text-gray-400 mb-2 block">PASTE RAW REQUEST HERE:</label>
             <textarea id="rawInput" class="input-area w-full flex-1 p-4 rounded text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" placeholder="POST /ph/bff-api/user/email_register...
 Host: m.shein.com
-...
-(Paste the full raw request from your capture tool here)"></textarea>
+x-csrf-token: ...
+(Paste the full raw request here)"></textarea>
         </div>
 
         <!-- Right: Output -->
@@ -47,7 +44,6 @@ Host: m.shein.com
             <label class="text-sm font-bold text-gray-400 mb-2 block">GENERATED PYTHON SCRIPT:</label>
             <textarea id="outputCode" readonly class="input-area w-full flex-1 p-4 rounded text-xs leading-relaxed text-emerald-300 focus:outline-none resize-none" placeholder="# Generated code will appear here..."></textarea>
             
-            <!-- Copy Button -->
             <button onclick="copyOutput()" class="absolute top-9 right-4 bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                 Copy
             </button>
@@ -56,53 +52,39 @@ Host: m.shein.com
 
     <!-- Logic -->
     <script>
-        function parseRawRequest(raw) {
-            const lines = raw.trim().split('\n');
-            let headers = {};
-            let isBody = false;
-
-            for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim();
-
-                if (i === 0 || line === "") {
-                    if (line === "") isBody = true;
-                    continue;
-                }
-
-                if (!isBody) {
-                    const separator = line.indexOf(":");
-                    if (separator > -1) {
-                        const key = line.substring(0, separator).trim().toLowerCase();
-                        const val = line.substring(separator + 1).trim();
-                        headers[key] = val;
-                    }
-                }
-            }
-            return { headers };
-        }
-
         function generateScript() {
             const raw = document.getElementById('rawInput').value;
             if (!raw) { alert("Please paste raw request data first."); return; }
 
-            const data = parseRawRequest(raw);
-            const h = data.headers;
+            const lines = raw.trim().split('\n');
+            let h = {};
 
-            // Helper to get value or placeholder
-            const get = (k) => h[k] || "MISSING_IN_RAW_INPUT";
-            
-            // Handle Cookie escaping (single quotes inside cookie string)
-            const rawCookie = get('cookie');
-            const safeCookie = rawCookie !== "MISSING_IN_RAW_INPUT" 
-                ? rawCookie.replace(/'/g, "\\'") 
-                : "";
+            // Extract Headers specifically
+            for (let line of lines) {
+                const separator = line.indexOf(":");
+                if (separator > -1) {
+                    const key = line.substring(0, separator).trim().toLowerCase();
+                    const val = line.substring(separator + 1).trim();
+                    // Accumulate cookies or overwrite others
+                    if (key === 'cookie' && h['cookie']) {
+                         h['cookie'] += '; ' + val;
+                    } else {
+                        h[key] = val;
+                    }
+                }
+            }
+
+            // Safe extraction helper
+            const get = (k) => h[k] || "MISSING_VALUE";
+            // Escape cookies for Python
+            const safeCookie = (h['cookie'] || "").replace(/'/g, "\\'").replace(/"/g, '\\"');
 
             const pythonCode = `import requests
 import json
 import uuid
 import time
 
-# ─── EXTRACTED TOKENS ────────────────────────────>
+# ─── 1. UPDATED TOKENS FROM RAW DATA ─────────────>
 CSRF_TOKEN  = "${get('x-csrf-token')}"
 ARMOR_TOKEN = "${get('armortoken')}"
 GW_AUTH     = "${get('x-gw-auth')}"
@@ -112,12 +94,11 @@ CS_RANDOM   = "${get('x-cs-random')}"
 SMDEVICE_ID = "${get('smdeviceid')}"
 COOKIES     = '${safeCookie}'
 
-CODES = [
-    "phsf021210", "phsf021209", "phsf021208", 
-    "phsf021207", "phsf021206", "phsf021205"
-]
+# ─── 2. VOUCHER CODES ────────────────────────────>
+CODES = ["phsf021210", "phsf021209", "phsf021208", "phsf021207", "phsf021206", "phsf021205"]
 
-# ─── CONFIGURATION ───────────────────────────────>
+# ─── 3. CONFIGURATION (Direct Collection) ────────>
+# We skip login and go straight to collection to avoid "parameter errors"
 url = "https://m.shein.com/ph/bff-api/promotion/coupon/bind_coupon"
 params = {'_ver': "1.1.8", '_lang': "en"}
 
@@ -135,7 +116,7 @@ headers = {
 }
 
 print("\\n" + "="*60)
-print("Collecting vouchers ONE BY ONE")
+print("Collecting vouchers DIRECTLY (Bypassing Login)")
 print("="*60)
 
 for code in CODES:
@@ -152,12 +133,16 @@ for code in CODES:
 
     try:
         r = requests.post(url, params=params, json=payload, headers=headers, timeout=10)
-        result = r.json()
         
-        if str(result.get('code')) == "0":
-            print(f"✅ {code} - Success")
-        else:
-            print(f"❌ {code} - {result.get('msg')}")
+        # Debugging Response
+        try:
+            result = r.json()
+            if str(result.get('code')) == "0":
+                print(f"✅ {code} - Success")
+            else:
+                print(f"❌ {code} - {result.get('msg')}")
+        except:
+            print(f"❌ {code} - Response not JSON: {r.text[0:50]}...")
             
     except Exception as e:
         print(f"❌ {code} - Request failed: {e}")
@@ -166,8 +151,7 @@ for code in CODES:
 
 print("\\n" + "="*60)
 print("Done! Check m.shein.com → My Coupons")
-print("="*60 + "\\n")
-`;
+print("="*60 + "\\n")`;
 
             document.getElementById('outputCode').value = pythonCode;
         }
