@@ -22,8 +22,8 @@
     <!-- Header -->
     <header class="mb-4 flex justify-between items-center shrink-0">
         <div>
-            <h1 class="text-2xl font-bold text-emerald-400">SHEIN SCRIPT GEN <span class="text-xs text-gray-500">v1.0</span></h1>
-            <p class="text-xs text-gray-400">Paste Raw HTTP Request &rarr; Get Python Script</p>
+            <h1 class="text-2xl font-bold text-emerald-400">SHEIN SCRIPT GEN <span class="text-xs text-gray-500">v2.0</span></h1>
+            <p class="text-xs text-gray-400">Paste Raw HTTP Request &rarr; Get Configured Script</p>
         </div>
         <button onclick="generateScript()" class="btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-6 rounded shadow-lg shadow-emerald-900/50">
             GENERATE CODE
@@ -59,73 +59,26 @@ Host: m.shein.com
         function parseRawRequest(raw) {
             const lines = raw.trim().split('\n');
             let headers = {};
-            let bodyLines = [];
             let isBody = false;
-            let method = "POST";
-            let url = "";
 
-            // Parsing Loop
             for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim(); // Don't trim internal spaces yet
+                let line = lines[i].trim();
 
-                if (i === 0 && (line.startsWith("POST") || line.startsWith("GET"))) {
-                    const parts = line.split(" ");
-                    method = parts[0];
-                    url = "https://m.shein.com" + parts[1].split('?')[0]; // Base URL assumption
-                    continue;
-                }
-
-                if (line === "") {
-                    isBody = true;
+                if (i === 0 || line === "") {
+                    if (line === "") isBody = true;
                     continue;
                 }
 
                 if (!isBody) {
-                    // Header Parsing
                     const separator = line.indexOf(":");
                     if (separator > -1) {
                         const key = line.substring(0, separator).trim().toLowerCase();
                         const val = line.substring(separator + 1).trim();
                         headers[key] = val;
                     }
-                } else {
-                    bodyLines.push(lines[i]); // Keep original formatting for body
                 }
             }
-
-            // Extract Form Data
-            let formData = {};
-            const fullBody = bodyLines.join('\n');
-            
-            // 1. Multipart Form Data Parsing
-            if (fullBody.includes("WebKitFormBoundary")) {
-                const parts = fullBody.split(/------WebKitFormBoundary[a-zA-Z0-9]+/);
-                parts.forEach(part => {
-                    if (part.includes('name="')) {
-                        const nameMatch = part.match(/name="([^"]+)"/);
-                        if (nameMatch) {
-                            const name = nameMatch[1];
-                            // Extract content after double newline
-                            const contentParts = part.split('\n\n');
-                            if (contentParts.length > 1) {
-                                let value = contentParts[1].trim();
-                                if (value && !value.includes("--")) {
-                                    formData[name] = value;
-                                }
-                            }
-                        }
-                    }
-                });
-            } 
-            // 2. URL Encoded Parsing
-            else if (fullBody.includes("=") && !fullBody.includes("{")) {
-                fullBody.split('&').forEach(pair => {
-                    const [k, v] = pair.split('=');
-                    if (k) formData[k] = decodeURIComponent(v || '');
-                });
-            }
-
-            return { headers, formData, url };
+            return { headers };
         }
 
         function generateScript() {
@@ -133,135 +86,87 @@ Host: m.shein.com
             if (!raw) { alert("Please paste raw request data first."); return; }
 
             const data = parseRawRequest(raw);
+            const h = data.headers;
+
+            // Helper to get value or placeholder
+            const get = (k) => h[k] || "MISSING_IN_RAW_INPUT";
             
-            // Clean Headers
-            const forbiddenHeaders = ['host', 'connection', 'content-length', 'cookie'];
-            let cleanHeaders = {};
-            for (const [k, v] of Object.entries(data.headers)) {
-                if (!forbiddenHeaders.includes(k)) {
-                    cleanHeaders[k] = v;
-                }
-            }
+            // Handle Cookie escaping (single quotes inside cookie string)
+            const rawCookie = get('cookie');
+            const safeCookie = rawCookie !== "MISSING_IN_RAW_INPUT" 
+                ? rawCookie.replace(/'/g, "\\'") 
+                : "";
 
-            // Extract Cookie specifically to handle formatting
-            const cookieStr = data.headers['cookie'] || "";
-
-            // Build Python Dictionary Strings
-            const headersStr = JSON.stringify(cleanHeaders, null, 4);
-            const formDataStr = JSON.stringify(data.formData, null, 4);
-
-            // Template
             const pythonCode = `import requests
+import json
 import uuid
 import time
-import json
 
-# ─── AUTO-GENERATED CREDENTIALS ──────────────────>
-# Extracted from your raw request
-EMAIL    = "${data.formData['email'] || 'ENTER_EMAIL'}"
-PASSWORD = "${data.formData['password'] || 'ENTER_PASSWORD'}"
+# ─── EXTRACTED TOKENS ────────────────────────────>
+CSRF_TOKEN  = "${get('x-csrf-token')}"
+ARMOR_TOKEN = "${get('armortoken')}"
+GW_AUTH     = "${get('x-gw-auth')}"
+OEST        = "${get('x-oest')}"
+AD_FLAG     = "${get('x-ad-flag')}"
+CS_RANDOM   = "${get('x-cs-random')}"
+SMDEVICE_ID = "${get('smdeviceid')}"
+COOKIES     = '${safeCookie}'
 
-# ─── VOUCHER CODES TO COLLECT ────────────────────>
 CODES = [
-    "phsf021205", "phsf021206", "phsf021207",
-    "phsf021208", "phsf021209", "phsf021210"
+    "phsf021210", "phsf021209", "phsf021208", 
+    "phsf021207", "phsf021206", "phsf021205"
 ]
 
-# ─── PARSED HEADERS ──────────────────────────────>
-# Note: Host and Content-Length are handled automatically
-BASE_HEADERS = ${headersStr}
+# ─── CONFIGURATION ───────────────────────────────>
+url = "https://m.shein.com/ph/bff-api/promotion/coupon/bind_coupon"
+params = {'_ver': "1.1.8", '_lang': "en"}
 
-# Inject Cookie separately to avoid syntax errors with quotes
-BASE_HEADERS['cookie'] = '${cookieStr.replace(/'/g, "\\'")}' 
+headers = {
+    'Content-Type': "application/json",
+    'smdeviceid':   SMDEVICE_ID,
+    'x-cs-random':  CS_RANDOM,
+    'x-gw-auth':    GW_AUTH,
+    'armortoken':   ARMOR_TOKEN,
+    'x-csrf-token': CSRF_TOKEN,
+    'x-oest':       OEST,
+    'x-ad-flag':    AD_FLAG,
+    'Cookie':       COOKIES,
+    'User-Agent':   "${get('user-agent')}"
+}
 
-# ─── LOGIN CONFIGURATION ─────────────────────────>
-LOGIN_URL = "${data.url || 'https://m.shein.com/ph/bff-api/user/email_register'}"
+print("\\n" + "="*60)
+print("Collecting vouchers ONE BY ONE")
+print("="*60)
 
-# ─── STEP 1: LOGIN ───────────────────────────────>
-def login(session):
-    print(f"Logging in to {LOGIN_URL}...")
+for code in CODES:
+    print(f"\\nCollecting: {code}")
     
-    # Form Data Extracted from Raw Body
-    form_data = ${formDataStr}
-
-    # Ensure credentials are sync'd if they were found
-    if "email" in form_data: form_data["email"] = EMAIL
-    if "password" in form_data: form_data["password"] = PASSWORD
-    if "password_confirm" in form_data: form_data["password_confirm"] = PASSWORD
+    payload = {
+        "scene": "home",
+        "idempotentCode": str(uuid.uuid4()),
+        "couponPackages": [{
+            "couponPackageId": "17135535",
+            "couponCodes": code
+        }]
+    }
 
     try:
-        r = session.post(
-            LOGIN_URL,
-            params={"_ver": "1.1.8", "_lang": "en"},
-            data=form_data,
-            headers=BASE_HEADERS,
-            timeout=15
-        )
+        r = requests.post(url, params=params, json=payload, headers=headers, timeout=10)
+        result = r.json()
         
-        try:
-            result = r.json()
-            if str(result.get("code")) == "0":
-                print("✅ Login successful!\\n")
-                return True
-            else:
-                print(f"❌ Login failed: {result.get('msg')}")
-                return False
-        except:
-            print(f"❌ Response was not JSON (Status: {r.status_code})")
-            return False
-
+        if str(result.get('code')) == "0":
+            print(f"✅ {code} - Success")
+        else:
+            print(f"❌ {code} - {result.get('msg')}")
+            
     except Exception as e:
-        print(f"❌ Error: {e}")
-        return False
+        print(f"❌ {code} - Request failed: {e}")
 
-# ─── STEP 2: COLLECT VOUCHERS ────────────────────>
-def collect_vouchers(session):
-    voucher_url = "https://m.shein.com/ph/bff-api/promotion/coupon/package/collect"
-    
-    # Header Override for JSON payload
-    voucher_headers = BASE_HEADERS.copy()
-    voucher_headers["Content-Type"] = "application/json"
+    time.sleep(2)
 
-    print("=" * 60)
-    print("Collecting vouchers...")
-    print("=" * 60)
-
-    for code in CODES:
-        print(f"\\nCollecting: {code}")
-
-        payload = {
-            "scene": "home",
-            "idempotentCode": str(uuid.uuid4()),
-            "couponPackages": [{
-                "couponPackageId": "17135535",
-                "couponCodes": code,
-            }]
-        }
-
-        try:
-            r = session.post(
-                voucher_url,
-                params={"_ver": "1.1.8", "_lang": "en"},
-                json=payload,
-                headers=voucher_headers,
-                timeout=10
-            )
-            res = r.json()
-            if str(res.get("code")) == "0":
-                print(f"✅ {code} — Success")
-            else:
-                print(f"❌ {code} — {res.get('msg')}")
-
-        except Exception as e:
-            print(f"❌ {code} — Request failed")
-
-        time.sleep(2)
-
-# ─── MAIN ────────────────────────────────────────>
-if __name__ == "__main__":
-    with requests.Session() as s:
-        if login(s):
-            collect_vouchers(s)
+print("\\n" + "="*60)
+print("Done! Check m.shein.com → My Coupons")
+print("="*60 + "\\n")
 `;
 
             document.getElementById('outputCode').value = pythonCode;
