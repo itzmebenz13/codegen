@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shein Script Generator v3</title>
+    <title>Shein Script Generator v4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: #e2e8f0; font-family: 'Courier New', Courier, monospace; }
@@ -20,8 +20,8 @@
     <!-- Header -->
     <header class="mb-4 flex justify-between items-center shrink-0">
         <div>
-            <h1 class="text-2xl font-bold text-emerald-400">SHEIN SCRIPT GEN <span class="text-xs text-gray-500">v3.0 (Direct Mode)</span></h1>
-            <p class="text-xs text-gray-400">Fixes "Error when requesting parameter" by skipping login</p>
+            <h1 class="text-2xl font-bold text-emerald-400">SHEIN SCRIPT GEN <span class="text-xs text-gray-500">v4.0 (Exact Copy)</span></h1>
+            <p class="text-xs text-gray-400">Updates ONLY the tokens in your original code format.</p>
         </div>
         <button onclick="generateScript()" class="btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-6 rounded shadow-lg shadow-emerald-900/50">
             GENERATE CODE
@@ -76,52 +76,42 @@ x-csrf-token: ...
 
             // Safe extraction helper
             const get = (k) => h[k] || "MISSING_VALUE";
-            // Escape cookies for Python
+            
+            // Handle cookies: We use single quotes in the Python code to avoid conflicts with double quotes inside JSON cookies
             const safeCookie = (h['cookie'] || "").replace(/'/g, "\\'").replace(/"/g, '\\"');
 
+            // EXACT TEMPLATE FROM USER REQUEST
             const pythonCode = `import requests
 import json
 import uuid
 import time
-
-# ─── 1. UPDATED TOKENS FROM RAW DATA ─────────────>
-CSRF_TOKEN  = "${get('x-csrf-token')}"
+CSRF_TOKEN = "${get('x-csrf-token')}"
 ARMOR_TOKEN = "${get('armortoken')}"
-GW_AUTH     = "${get('x-gw-auth')}"
-OEST        = "${get('x-oest')}"
-AD_FLAG     = "${get('x-ad-flag')}"
-CS_RANDOM   = "${get('x-cs-random')}"
+GW_AUTH = "${get('x-gw-auth')}"
+OEST = "${get('x-oest')}"
+AD_FLAG = "${get('x-ad-flag')}"
+CS_RANDOM = "${get('x-cs-random')}"
 SMDEVICE_ID = "${get('smdeviceid')}"
-COOKIES     = '${safeCookie}'
-
-# ─── 2. VOUCHER CODES ────────────────────────────>
+COOKIES = "${safeCookie}"
 CODES = ["phsf021210", "phsf021209", "phsf021208", "phsf021207", "phsf021206", "phsf021205"]
-
-# ─── 3. CONFIGURATION (Direct Collection) ────────>
-# We skip login and go straight to collection to avoid "parameter errors"
 url = "https://m.shein.com/ph/bff-api/promotion/coupon/bind_coupon"
 params = {'_ver': "1.1.8", '_lang': "en"}
-
 headers = {
     'Content-Type': "application/json",
-    'smdeviceid':   SMDEVICE_ID,
-    'x-cs-random':  CS_RANDOM,
-    'x-gw-auth':    GW_AUTH,
-    'armortoken':   ARMOR_TOKEN,
+    'smdeviceid': SMDEVICE_ID,
+    'x-cs-random': CS_RANDOM,
+    'x-gw-auth': GW_AUTH,
+    'armortoken': ARMOR_TOKEN,
     'x-csrf-token': CSRF_TOKEN,
-    'x-oest':       OEST,
-    'x-ad-flag':    AD_FLAG,
-    'Cookie':       COOKIES,
-    'User-Agent':   "${get('user-agent')}"
+    'x-oest': OEST,
+    'x-ad-flag': AD_FLAG,
+    'Cookie': COOKIES
 }
-
 print("\\n" + "="*60)
-print("Collecting vouchers DIRECTLY (Bypassing Login)")
+print("Collecting vouchers ONE BY ONE")
 print("="*60)
-
 for code in CODES:
     print(f"\\nCollecting: {code}")
-    
     payload = {
         "scene": "home",
         "idempotentCode": str(uuid.uuid4()),
@@ -130,25 +120,16 @@ for code in CODES:
             "couponCodes": code
         }]
     }
-
     try:
         r = requests.post(url, params=params, json=payload, headers=headers, timeout=10)
-        
-        # Debugging Response
-        try:
-            result = r.json()
-            if str(result.get('code')) == "0":
-                print(f"✅ {code} - Success")
-            else:
-                print(f"❌ {code} - {result.get('msg')}")
-        except:
-            print(f"❌ {code} - Response not JSON: {r.text[0:50]}...")
-            
-    except Exception as e:
-        print(f"❌ {code} - Request failed: {e}")
-
+        result = r.json()
+        if str(result.get('code')) == "0":
+            print(f"✅ {code} - Success")
+        else:
+            print(f"❌ {code} - {result.get('msg')}")
+    except:
+        print(f"❌ {code} - Request failed")
     time.sleep(2)
-
 print("\\n" + "="*60)
 print("Done! Check m.shein.com → My Coupons")
 print("="*60 + "\\n")`;
