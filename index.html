@@ -1,458 +1,278 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SHEIN Script Generator v2.0</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root {
-    --bg: #09090b;
-    --surface: #121217;
-    --surface-hover: #1c1c24;
-    --border: #27272a;
-    --accent: #6366f1; /* Indigo */
-    --accent-glow: rgba(99, 102, 241, 0.15);
-    --success: #10b981;
-    --text: #e4e4e7;
-    --text-muted: #a1a1aa;
-    --font-mono: 'JetBrains Mono', monospace;
-    --font-sans: 'Inter', sans-serif;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-body { background: var(--bg); color: var(--text); font-family: var(--font-sans); min-height: 100vh; display: flex; flex-direction: column; }
-
-/* Layout */
-.container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; width: 100%; flex: 1; }
-header { margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
-h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, #a1a1aa); -webkit-background-clip: text; color: transparent; }
-.badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: var(--surface-hover); border: 1px solid var(--border); color: var(--text-muted); }
-
-/* Steps */
-.grid { display: grid; grid-template-columns: 280px 1fr; gap: 40px; }
-@media(max-width: 800px) { .grid { grid-template-columns: 1fr; } }
-
-.sidebar { display: flex; flex-direction: column; gap: 8px; }
-.step-btn {
-    text-align: left; background: transparent; border: 1px solid transparent; color: var(--text-muted);
-    padding: 12px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;
-    transition: all 0.2s; display: flex; align-items: center; gap: 12px;
-}
-.step-btn:hover { color: var(--text); background: var(--surface-hover); }
-.step-btn.active { background: var(--surface); border-color: var(--border); color: var(--text); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-.step-btn .num { width: 24px; height: 24px; background: var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); transition: 0.2s; }
-.step-btn.active .num { background: var(--accent); color: white; }
-.step-btn.done .num { background: var(--success); color: black; }
-
-/* Content Area */
-.panel { display: none; animation: fadeIn 0.3s ease; }
-.panel.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
-.field-group { margin-bottom: 20px; }
-.field-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-input, textarea, select {
-    width: 100%; background: #000; border: 1px solid var(--border); color: var(--text);
-    padding: 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 13px;
-    transition: border 0.2s; resize: vertical;
-}
-input:focus, textarea:focus, select:focus { border-color: var(--accent); }
-textarea { min-height: 150px; line-height: 1.5; }
-
-/* Buttons */
-.btn-row { display: flex; gap: 12px; margin-top: 24px; }
-.btn {
-    padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; border: none;
-    transition: transform 0.1s, opacity 0.2s; display: inline-flex; align-items: center; gap: 8px;
-}
-.btn:active { transform: scale(0.98); }
-.btn-primary { background: var(--accent); color: white; box-shadow: 0 0 20px var(--accent-glow); }
-.btn-primary:hover { opacity: 0.9; }
-.btn-secondary { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); }
-.btn-secondary:hover { border-color: var(--text-muted); }
-.btn-success { background: var(--success); color: #000; }
-
-/* Output Code Block */
-.code-wrapper { position: relative; }
-.code-wrapper pre {
-    background: #050505; border: 1px solid var(--border); border-radius: 8px; padding: 20px;
-    font-family: var(--font-mono); font-size: 12px; line-height: 1.6; color: #a1a1aa;
-    overflow-x: auto; white-space: pre; height: 500px; tab-size: 4;
-}
-.copy-overlay {
-    position: absolute; top: 10px; right: 10px;
-    background: var(--surface); border: 1px solid var(--border); color: var(--text);
-    padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;
-    font-weight: 600; transition: 0.2s;
-}
-.copy-overlay:hover { border-color: var(--accent); color: var(--accent); }
-
-/* Parsed Status Grid */
-.status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 16px; }
-.status-item { background: #000; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; }
-.status-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
-.status-val { font-size: 11px; color: var(--success); font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
-.status-val.missing { color: #ef4444; }
-
-/* Toast */
-.toast {
-    position: fixed; bottom: 30px; right: 30px; background: var(--surface); border: 1px solid var(--border);
-    padding: 12px 20px; border-radius: 8px; display: flex; align-items: center; gap: 10px;
-    transform: translateY(100px); opacity: 0; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100;
-}
-.toast.show { transform: translateY(0); opacity: 1; }
-.toast-icon { color: var(--success); }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shein Script Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Courier New', Courier, monospace; }
+        .input-area { background-color: #1e293b; border-color: #334155; }
+        .btn { transition: all 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
 </head>
-<body>
+<body class="h-screen flex flex-col p-4 overflow-hidden">
 
-<div class="container">
-    <header>
+    <!-- Header -->
+    <header class="mb-4 flex justify-between items-center shrink-0">
         <div>
-            <h1>SHEIN Script Gen</h1>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Convert raw HTTP/2 requests into clean Python automation</div>
+            <h1 class="text-2xl font-bold text-emerald-400">SHEIN SCRIPT GEN <span class="text-xs text-gray-500">v1.0</span></h1>
+            <p class="text-xs text-gray-400">Paste Raw HTTP Request &rarr; Get Python Script</p>
         </div>
-        <div class="badge" id="status-badge">Waiting for input</div>
+        <button onclick="generateScript()" class="btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-6 rounded shadow-lg shadow-emerald-900/50">
+            GENERATE CODE
+        </button>
     </header>
 
-    <div class="grid">
-        <!-- Sidebar Navigation -->
-        <div class="sidebar">
-            <button class="step-btn active" onclick="setStep(1)" id="btn-1">
-                <div class="num">1</div> Input Request
-            </button>
-            <button class="step-btn" onclick="setStep(2)" id="btn-2">
-                <div class="num">2</div> Configure
-            </button>
-            <button class="step-btn" onclick="setStep(3)" id="btn-3">
-                <div class="num">3</div> Generate
-            </button>
+    <!-- Main Layout -->
+    <div class="flex flex-1 gap-4 min-h-0">
+        
+        <!-- Left: Input -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <label class="text-sm font-bold text-gray-400 mb-2 block">PASTE RAW REQUEST HERE (Headers + Body):</label>
+            <textarea id="rawInput" class="input-area w-full flex-1 p-4 rounded text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" placeholder="POST /ph/bff-api/user/email_register...
+Host: m.shein.com
+...
+(Paste the full raw request from your capture tool here)"></textarea>
         </div>
 
-        <!-- Main Content -->
-        <div class="content">
+        <!-- Right: Output -->
+        <div class="flex-1 flex flex-col min-w-0 relative group">
+            <label class="text-sm font-bold text-gray-400 mb-2 block">GENERATED PYTHON SCRIPT:</label>
+            <textarea id="outputCode" readonly class="input-area w-full flex-1 p-4 rounded text-xs leading-relaxed text-emerald-300 focus:outline-none resize-none" placeholder="# Generated code will appear here..."></textarea>
             
-            <!-- Step 1: Input -->
-            <div class="panel active" id="step-1">
-                <div class="card">
-                    <div class="field-group">
-                        <label>Paste Raw Request</label>
-                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-                            Copy headers from Chrome DevTools (Network Tab -> right click request -> Copy -> Copy Request Headers) or paste the full raw text.
-                        </div>
-                        <textarea id="rawInput" placeholder="POST /ph/bff-api/user/common_login HTTP/2&#10;Host: m.shein.com&#10;x-csrf-token: ...&#10;Cookie: ..."></textarea>
-                    </div>
-                    <div class="btn-row">
-                        <button class="btn btn-primary" onclick="parseRequest()">Parse Data</button>
-                        <button class="btn btn-secondary" onclick="loadExample()">Load Example</button>
-                    </div>
-                </div>
-
-                <div class="card" id="parsed-results" style="display:none;">
-                    <div class="field-group">
-                        <label>Extracted Tokens</label>
-                        <div class="status-grid" id="token-grid"></div>
-                    </div>
-                    <div class="btn-row">
-                        <button class="btn btn-primary" onclick="setStep(2)">Next: Configure →</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 2: Configure -->
-            <div class="panel" id="step-2">
-                <div class="card">
-                    <div class="field-group">
-                        <label>Coupon Codes (One per line)</label>
-                        <textarea id="couponCodes" style="min-height: 100px;">phsf021205
-phsf021206
-phsf021207</textarea>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="field-group">
-                        <label>Python Script Settings</label>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <div>
-                                <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">Request Delay (seconds)</div>
-                                <input type="number" id="delay" value="2.5" step="0.5">
-                            </div>
-                            <div>
-                                <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">Retry Attempts</div>
-                                <input type="number" id="retries" value="3">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="field-group">
-                        <label>Target Region</label>
-                        <input type="text" id="regionUrl" value="https://m.shein.com/ph">
-                    </div>
-                    <div class="btn-row">
-                        <button class="btn btn-secondary" onclick="setStep(1)">← Back</button>
-                        <button class="btn btn-primary" onclick="generateScript()">Generate Script →</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 3: Output -->
-            <div class="panel" id="step-3">
-                <div class="card">
-                    <div class="field-group">
-                        <label>Generated Python Code</label>
-                        <div class="code-wrapper">
-                            <pre id="codeOutput"># Click generate to create script...</pre>
-                            <button class="copy-overlay" onclick="copyToClipboard()">Copy Code</button>
-                        </div>
-                    </div>
-                    <div class="btn-row">
-                        <button class="btn btn-secondary" onclick="setStep(2)">← Edit Config</button>
-                        <button class="btn btn-primary" onclick="downloadPy()">Download .py</button>
-                    </div>
-                </div>
-            </div>
-
+            <!-- Copy Button -->
+            <button onclick="copyOutput()" class="absolute top-9 right-4 bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                Copy
+            </button>
         </div>
     </div>
-</div>
 
-<div class="toast" id="toast">
-    <div class="toast-icon">✓</div>
-    <div id="toast-msg">Action Successful</div>
-</div>
+    <!-- Logic -->
+    <script>
+        function parseRawRequest(raw) {
+            const lines = raw.trim().split('\n');
+            let headers = {};
+            let bodyLines = [];
+            let isBody = false;
+            let method = "POST";
+            let url = "";
 
-<script>
-// State
-const STATE = {
-    headers: {},
-    cookies: '',
-    tokens: {
-        csrf: '', armor: '', gwa: '', oest: '', adf: '', random: '', device: ''
-    }
-};
+            // Parsing Loop
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim(); // Don't trim internal spaces yet
 
-// UI Functions
-function setStep(n) {
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.getElementById(`step-${n}`).classList.add('active');
-    
-    document.querySelectorAll('.step-btn').forEach((b, i) => {
-        b.classList.remove('active');
-        if (i + 1 === n) b.classList.add('active');
-        if (i + 1 < n) b.classList.add('done');
-    });
-}
+                if (i === 0 && (line.startsWith("POST") || line.startsWith("GET"))) {
+                    const parts = line.split(" ");
+                    method = parts[0];
+                    url = "https://m.shein.com" + parts[1].split('?')[0]; // Base URL assumption
+                    continue;
+                }
 
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    document.getElementById('toast-msg').innerText = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
-}
+                if (line === "") {
+                    isBody = true;
+                    continue;
+                }
 
-// Logic
-function parseRequest() {
-    const raw = document.getElementById('rawInput').value;
-    if (!raw.trim()) return showToast("Please paste header data first");
+                if (!isBody) {
+                    // Header Parsing
+                    const separator = line.indexOf(":");
+                    if (separator > -1) {
+                        const key = line.substring(0, separator).trim().toLowerCase();
+                        const val = line.substring(separator + 1).trim();
+                        headers[key] = val;
+                    }
+                } else {
+                    bodyLines.push(lines[i]); // Keep original formatting for body
+                }
+            }
 
-    const lines = raw.split('\n');
-    let cookieList = [];
-    
-    // Reset
-    STATE.headers = {};
-    
-    lines.forEach(line => {
-        line = line.trim();
-        if (!line || line.startsWith(':') || line.startsWith('POST') || line.startsWith('GET')) return;
-        
-        // Handle Header: Value
-        const separatorIndex = line.indexOf(':');
-        if (separatorIndex === -1) return;
-
-        const key = line.substring(0, separatorIndex).trim();
-        const val = line.substring(separatorIndex + 1).trim();
-
-        if (key.toLowerCase() === 'cookie') {
-            cookieList.push(val);
-        } else {
-            STATE.headers[key.toLowerCase()] = val;
-        }
-    });
-
-    STATE.cookies = cookieList.join('; ');
-    
-    // Map tokens
-    STATE.tokens.csrf = STATE.headers['x-csrf-token'] || '';
-    STATE.tokens.armor = STATE.headers['armortoken'] || '';
-    STATE.tokens.gwa = STATE.headers['x-gw-auth'] || '';
-    STATE.tokens.oest = STATE.headers['x-oest'] || '';
-    STATE.tokens.adf = STATE.headers['x-ad-flag'] || '';
-    STATE.tokens.random = STATE.headers['x-cs-random'] || '';
-    STATE.tokens.device = STATE.headers['smdeviceid'] || '';
-
-    // Auto-detect region from Referer or Host if possible, otherwise default
-    if(raw.includes('/ph/')) document.getElementById('regionUrl').value = 'https://m.shein.com/ph';
-    else if(raw.includes('/us/')) document.getElementById('regionUrl').value = 'https://m.shein.com/us';
-
-    renderParsedStatus();
-    document.getElementById('parsed-results').style.display = 'block';
-    document.getElementById('status-badge').innerText = "Data Parsed";
-    document.getElementById('status-badge').style.color = "var(--success)";
-    showToast("Headers parsed successfully");
-}
-
-function renderParsedStatus() {
-    const grid = document.getElementById('token-grid');
-    const map = {
-        'CSRF': STATE.tokens.csrf,
-        'Armor': STATE.tokens.armor,
-        'Device ID': STATE.tokens.device,
-        'Cookies': STATE.cookies ? 'Found' : ''
-    };
-    
-    grid.innerHTML = Object.entries(map).map(([k, v]) => `
-        <div class="status-item">
-            <div class="status-label">${k}</div>
-            <div class="status-val ${!v ? 'missing' : ''}">${v ? (v.length > 20 ? v.substring(0,20)+'...' : v) : 'MISSING'}</div>
-        </div>
-    `).join('');
-}
-
-function generateScript() {
-    const codes = document.getElementById('couponCodes').value.split('\n').filter(x => x.trim());
-    const baseUrl = document.getElementById('regionUrl').value.replace(/\/$/, '');
-    const delay = document.getElementById('delay').value;
-    const retries = document.getElementById('retries').value;
-
-    const pythonCode = `import requests
-import time
-import uuid
-import random
-import sys
-
-# --- CONFIGURATION ---
-BASE_URL = "${baseUrl}"
-API_ENDPOINT = f"{BASE_URL}/bff-api/promotion/coupon/bind_coupon"
-COUPON_CODES = ${JSON.stringify(codes)}
-
-# --- HEADERS & TOKENS ---
-# Extracted from session
-HEADERS = {
-    "Host": "m.shein.com",
-    "content-type": "application/json",
-    "origin": "https://m.shein.com",
-    "accept": "application/json, text/plain, */*",
-    "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-    "x-csrf-token": "${STATE.tokens.csrf}",
-    "armortoken": "${STATE.tokens.armor}",
-    "x-gw-auth": "${STATE.tokens.gwa}",
-    "x-oest": "${STATE.tokens.oest}",
-    "x-ad-flag": "${STATE.tokens.adf}",
-    "x-cs-random": "${STATE.tokens.random}",
-    "smdeviceid": "${STATE.tokens.device}",
-    "cookie": "${STATE.cookies}"
-}
-
-def collect_coupon(session, code):
-    """Attempts to collect a single coupon code."""
-    payload = {
-        "scene": "home",
-        "idempotentCode": str(uuid.uuid4()),
-        "couponPackages": [{
-            "couponPackageId": "17135535", # Default PKG ID, often static
-            "couponCodes": code
-        }]
-    }
-
-    print(f"\\n[+] Trying code: {code}")
-    
-    for attempt in range(${retries}):
-        try:
-            resp = session.post(API_ENDPOINT, json=payload, headers=HEADERS, timeout=10)
-            data = resp.json()
+            // Extract Form Data
+            let formData = {};
+            const fullBody = bodyLines.join('\n');
             
-            code_res = str(data.get('code', '-1'))
-            msg = data.get('msg', 'Unknown response')
+            // 1. Multipart Form Data Parsing
+            if (fullBody.includes("WebKitFormBoundary")) {
+                const parts = fullBody.split(/------WebKitFormBoundary[a-zA-Z0-9]+/);
+                parts.forEach(part => {
+                    if (part.includes('name="')) {
+                        const nameMatch = part.match(/name="([^"]+)"/);
+                        if (nameMatch) {
+                            const name = nameMatch[1];
+                            // Extract content after double newline
+                            const contentParts = part.split('\n\n');
+                            if (contentParts.length > 1) {
+                                let value = contentParts[1].trim();
+                                if (value && !value.includes("--")) {
+                                    formData[name] = value;
+                                }
+                            }
+                        }
+                    }
+                });
+            } 
+            // 2. URL Encoded Parsing
+            else if (fullBody.includes("=") && !fullBody.includes("{")) {
+                fullBody.split('&').forEach(pair => {
+                    const [k, v] = pair.split('=');
+                    if (k) formData[k] = decodeURIComponent(v || '');
+                });
+            }
 
-            if code_res == '0':
-                print(f"    SUCCESS! Coupon applied: {msg}")
-                return True
-            elif 'duplicate' in msg.lower() or 'already' in msg.lower():
-                print(f"    Info: Already collected ({msg})")
+            return { headers, formData, url };
+        }
+
+        function generateScript() {
+            const raw = document.getElementById('rawInput').value;
+            if (!raw) { alert("Please paste raw request data first."); return; }
+
+            const data = parseRawRequest(raw);
+            
+            // Clean Headers
+            const forbiddenHeaders = ['host', 'connection', 'content-length', 'cookie'];
+            let cleanHeaders = {};
+            for (const [k, v] of Object.entries(data.headers)) {
+                if (!forbiddenHeaders.includes(k)) {
+                    cleanHeaders[k] = v;
+                }
+            }
+
+            // Extract Cookie specifically to handle formatting
+            const cookieStr = data.headers['cookie'] || "";
+
+            // Build Python Dictionary Strings
+            const headersStr = JSON.stringify(cleanHeaders, null, 4);
+            const formDataStr = JSON.stringify(data.formData, null, 4);
+
+            // Template
+            const pythonCode = `import requests
+import uuid
+import time
+import json
+
+# ─── AUTO-GENERATED CREDENTIALS ──────────────────>
+# Extracted from your raw request
+EMAIL    = "${data.formData['email'] || 'ENTER_EMAIL'}"
+PASSWORD = "${data.formData['password'] || 'ENTER_PASSWORD'}"
+
+# ─── VOUCHER CODES TO COLLECT ────────────────────>
+CODES = [
+    "phsf021205", "phsf021206", "phsf021207",
+    "phsf021208", "phsf021209", "phsf021210"
+]
+
+# ─── PARSED HEADERS ──────────────────────────────>
+# Note: Host and Content-Length are handled automatically
+BASE_HEADERS = ${headersStr}
+
+# Inject Cookie separately to avoid syntax errors with quotes
+BASE_HEADERS['cookie'] = '${cookieStr.replace(/'/g, "\\'")}' 
+
+# ─── LOGIN CONFIGURATION ─────────────────────────>
+LOGIN_URL = "${data.url || 'https://m.shein.com/ph/bff-api/user/email_register'}"
+
+# ─── STEP 1: LOGIN ───────────────────────────────>
+def login(session):
+    print(f"Logging in to {LOGIN_URL}...")
+    
+    # Form Data Extracted from Raw Body
+    form_data = ${formDataStr}
+
+    # Ensure credentials are sync'd if they were found
+    if "email" in form_data: form_data["email"] = EMAIL
+    if "password" in form_data: form_data["password"] = PASSWORD
+    if "password_confirm" in form_data: form_data["password_confirm"] = PASSWORD
+
+    try:
+        r = session.post(
+            LOGIN_URL,
+            params={"_ver": "1.1.8", "_lang": "en"},
+            data=form_data,
+            headers=BASE_HEADERS,
+            timeout=15
+        )
+        
+        try:
+            result = r.json()
+            if str(result.get("code")) == "0":
+                print("✅ Login successful!\\n")
                 return True
             else:
-                print(f"    Failed: {msg} (Code: {code_res})")
+                print(f"❌ Login failed: {result.get('msg')}")
                 return False
+        except:
+            print(f"❌ Response was not JSON (Status: {r.status_code})")
+            return False
+
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return False
+
+# ─── STEP 2: COLLECT VOUCHERS ────────────────────>
+def collect_vouchers(session):
+    voucher_url = "https://m.shein.com/ph/bff-api/promotion/coupon/package/collect"
+    
+    # Header Override for JSON payload
+    voucher_headers = BASE_HEADERS.copy()
+    voucher_headers["Content-Type"] = "application/json"
+
+    print("=" * 60)
+    print("Collecting vouchers...")
+    print("=" * 60)
+
+    for code in CODES:
+        print(f"\\nCollecting: {code}")
+
+        payload = {
+            "scene": "home",
+            "idempotentCode": str(uuid.uuid4()),
+            "couponPackages": [{
+                "couponPackageId": "17135535",
+                "couponCodes": code,
+            }]
+        }
+
+        try:
+            r = session.post(
+                voucher_url,
+                params={"_ver": "1.1.8", "_lang": "en"},
+                json=payload,
+                headers=voucher_headers,
+                timeout=10
+            )
+            res = r.json()
+            if str(res.get("code")) == "0":
+                print(f"✅ {code} — Success")
+            else:
+                print(f"❌ {code} — {res.get('msg')}")
 
         except Exception as e:
-            print(f"    Error (Attempt {attempt+1}): {str(e)}")
-            time.sleep(1)
-    
-    return False
+            print(f"❌ {code} — Request failed")
 
-def main():
-    print("--- SHEIN COUPON COLLECTOR STARTED ---")
-    session = requests.Session()
-    
-    success_count = 0
-    
-    for code in COUPON_CODES:
-        if collect_coupon(session, code):
-            success_count += 1
-        
-        # Random sleep to avoid rate limiting
-        sleep_time = random.uniform(${delay}, ${parseFloat(delay) + 1.5})
-        time.sleep(sleep_time)
+        time.sleep(2)
 
-    print(f"\\n--- COMPLETED ---")
-    print(f"Total Success: {success_count} / {len(COUPON_CODES)}")
-
+# ─── MAIN ────────────────────────────────────────>
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\\nStopped by user.")
-        sys.exit(0)`;
+    with requests.Session() as s:
+        if login(s):
+            collect_vouchers(s)
+`;
 
-    document.getElementById('codeOutput').textContent = pythonCode;
-    setStep(3);
-    showToast("Python script generated!");
-}
+            document.getElementById('outputCode').value = pythonCode;
+        }
 
-function copyToClipboard() {
-    const text = document.getElementById('codeOutput').textContent;
-    navigator.clipboard.writeText(text).then(() => {
-        showToast("Code copied to clipboard!");
-    });
-}
-
-function downloadPy() {
-    const text = document.getElementById('codeOutput').textContent;
-    const blob = new Blob([text], { type: "text/x-python" });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = "shein_collector.py";
-    link.click();
-}
-
-function loadExample() {
-    document.getElementById('rawInput').value = `POST /ph/bff-api/user/common_login?_ver=1.1.8 HTTP/2
-Host: m.shein.com
-x-csrf-token: nEwWL2dn-EXAMPLE-TOKEN-123
-armortoken: T1_3.11.1_EXAMPLE
-x-gw-auth: a=xjqHR52UWJdjKJ0x6QrCsus66rNXR9
-x-oest: MEZBMTgwNUFfOTNDNV9
-x-ad-flag: 8FkZa3NuCnoO+IBsqSDbVS0uj
-x-cs-random: 13d0ed2175cf1d6c6299f602c8364ca6
-smdeviceid: WHJMrwNw1k/E+z84j8tgt0Zj648
-Cookie: armorUuid=20260217; sessionID_shein_m_pwa=s%3A5R19UKmGVTXt5LgX`;
-    showToast("Example headers loaded");
-}
-</script>
-
+        function copyOutput() {
+            const copyText = document.getElementById("outputCode");
+            copyText.select();
+            document.execCommand("copy");
+            alert("Python code copied to clipboard!");
+        }
+    </script>
 </body>
 </html>
