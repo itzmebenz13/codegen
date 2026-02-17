@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHEIN Script Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Bebas+Neue&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080b10;--surface:#111620;--surface2:#171d2c;--border:#1e2535;--border2:#252e42;--accent:#e8304a;--purple:#7c5cfc;--blue:#3b82f6;--green:#22d98a;--yellow:#f5c842;--text:#dde3f0;--muted:#5a6480;--muted2:#8892aa;--code:#0a0d14}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(124,92,252,.07) 0%,transparent 70%);pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:0 20px 80px}
+header{padding:36px 0 30px;margin-bottom:32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.hicon{width:52px;height:52px;background:linear-gradient(140deg,var(--accent),var(--purple));border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 0 30px rgba(232,48,74,.3);flex-shrink:0}
+header h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,3.5vw,42px);letter-spacing:2px;background:linear-gradient(100deg,#dde3f0 30%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1}
+header p{font-size:12px;color:var(--muted2);margin-top:5px}
+.hstatus{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.flow{display:flex;margin-bottom:28px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.step{flex:1;display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;transition:background .2s;border-right:1px solid var(--border);position:relative;min-width:0}
+.step:last-child{border-right:none}
+.step:hover{background:var(--surface2)}
+.step.active{background:rgba(124,92,252,.1)}
+.step.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--purple),var(--accent))}
+.step.done .snum{background:var(--green);color:#000}
+.snum{width:26px;height:26px;border-radius:50%;background:var(--border2);color:var(--muted2);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.step.active .snum{background:var(--purple);color:white}
+.stitle{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step.active .stitle{color:#c4b5fd}
+.ssub{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.panel{display:none}
+.panel.active{display:block}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:860px){.g2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.card.hlg{border-color:rgba(34,217,138,.25);background:rgba(34,217,138,.03)}
+.ch{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.ci{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ci-r{background:rgba(232,48,74,.15)}.ci-p{background:rgba(124,92,252,.15)}.ci-g{background:rgba(34,217,138,.12)}.ci-b{background:rgba(59,130,246,.15)}.ci-y{background:rgba(245,200,66,.12)}
+.ct{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted2)}
+.cb{margin-left:auto}
+.fr{margin-bottom:13px}
+label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px}
+input[type=text],input[type=email],input[type=password],textarea,select{width:100%;background:var(--code);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:9px 12px;outline:none;transition:border-color .2s,box-shadow .2s;resize:vertical}
+input:focus,textarea:focus,select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,92,252,.12)}
+textarea{line-height:1.65;min-height:110px}
+textarea.xl{min-height:290px}
+textarea.lg{min-height:175px}
+.hint{font-size:10px;color:var(--muted);margin-top:5px;font-family:'JetBrains Mono',monospace;line-height:1.5}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all .18s;white-space:nowrap}
+.bp{background:linear-gradient(135deg,var(--purple),#5b3fd6);color:white;box-shadow:0 4px 16px rgba(124,92,252,.3)}
+.bp:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,92,252,.45)}
+.br{background:linear-gradient(135deg,var(--accent),#c42040);color:white;box-shadow:0 4px 16px rgba(232,48,74,.25)}
+.br:hover{transform:translateY(-2px)}
+.bg_{background:linear-gradient(135deg,#17b069,var(--green));color:#002516}
+.bg_:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(34,217,138,.3)}
+.bgh{background:var(--surface2);color:var(--muted2);border:1px solid var(--border2)}
+.bgh:hover{border-color:var(--purple);color:var(--text)}
+.bsm{padding:7px 14px;font-size:11px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-top:4px}
+.fp{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:8px 11px;display:flex;align-items:flex-start;gap:8px}
+.fp.ok{border-color:rgba(34,217,138,.25)}
+.fp.ms{border-color:rgba(232,48,74,.2);opacity:.55}
+.fpdot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.fpdot.ok{background:var(--green)}.fpdot.ms{background:var(--accent)}
+.fpk{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.fpv{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text);margin-top:2px;word-break:break-all}
+.ai{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:8px}
+.ai input{background:var(--surface)}
+.aidx{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.rmb{width:34px;height:34px;background:transparent;border:1px solid #2a1a1a;border-radius:7px;color:#e06060;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0}
+.rmb:hover{background:rgba(224,96,96,.1);border-color:#e06060}
+.ow{position:relative}
+.cbox{background:var(--code);border:1px solid var(--border);border-radius:12px;padding:20px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.75;color:#b8c4da;white-space:pre;overflow:auto;max-height:560px;tab-size:4}
+.cpbtn{position:absolute;top:10px;right:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--muted2);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;padding:5px 14px;cursor:pointer;transition:all .18s}
+.cpbtn:hover{color:var(--green);border-color:var(--green)}
+.cpbtn.ok{color:var(--green);border-color:var(--green);background:rgba(34,217,138,.07)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.bg{background:rgba(34,217,138,.1);color:var(--green);border:1px solid rgba(34,217,138,.2)}
+.by{background:rgba(245,200,66,.1);color:var(--yellow);border:1px solid rgba(245,200,66,.2)}
+.bpu{background:rgba(124,92,252,.12);color:#c4b5fd;border:1px solid rgba(124,92,252,.25)}
+.info{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:12px 16px;font-size:12px;color:#93b4e8;margin-bottom:16px;line-height:1.7}
+.info strong{color:#bdd0f5}
+.info code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11px}
+.sl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin:20px 0 12px;display:flex;align-items:center;gap:10px}
+.sl::after{content:'';flex:1;height:1px;background:var(--border)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;z-index:9999;opacity:0;transform:translateY(60px) scale(.96);transition:all .3s cubic-bezier(.34,1.4,.64,1);box-shadow:0 8px 32px rgba(0,0,0,.6);pointer-events:none;border:1px solid var(--border2)}
+.toast.show{opacity:1;transform:translateY(0) scale(1)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--purple)}
+select{background-color:var(--code)}
+select option{background:var(--surface2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="hicon">🎫</div>
+  <div>
+    <h1>SHEIN SCRIPT GENERATOR</h1>
+    <p>Paste raw HTTP/2 login request → auto-extract tokens + credentials → generate Python script</p>
+  </div>
+  <div class="hstatus">
+    <span class="badge bpu" id="pb">⬤ No data parsed</span>
+    <span class="badge bpu" id="sb">⬤ No script yet</span>
+  </div>
+</header>
+
+<div class="flow">
+  <div class="step active" id="sb1" onclick="gs(1)"><div class="snum" id="sn1">1</div><div><div class="stitle">Raw Request</div><div class="ssub">Headers + body</div></div></div>
+  <div class="step" id="sb2" onclick="gs(2)"><div class="snum" id="sn2">2</div><div><div class="stitle">Accounts</div><div class="ssub">Multi-login</div></div></div>
+  <div class="step" id="sb3" onclick="gs(3)"><div class="snum" id="sn3">3</div><div><div class="stitle">Coupons</div><div class="ssub">Codes & config</div></div></div>
+  <div class="step" id="sb4" onclick="gs(4)"><div class="snum" id="sn4">4</div><div><div class="stitle">Output Script</div><div class="ssub">Copy & download</div></div></div>
+</div>
+
+<!-- PANEL 1 -->
+<div class="panel active" id="p1">
+  <div class="info">
+    <strong>How to get this:</strong> Chrome DevTools → Network tab → find <code>common_login</code> POST request → right-click → <strong>Copy → Copy request headers</strong>, paste in the box. Also open the <strong>Payload</strong> tab and copy the form data — or paste the entire raw HTTP block (as seen in DevTools "view source"). The tool handles both formats.
+  </div>
+
+  <div class="card">
+    <div class="ch"><div class="ci ci-r">📋</div><span class="ct">Raw HTTP Request — Paste Full Block Here</span><div class="cb"><span class="badge by">Auto-parses HTTP/2 format</span></div></div>
+    <div class="fr">
+      <label>Full raw request (headers + WebKitFormBoundary body all at once)</label>
+      <textarea class="xl" id="rawAll" placeholder="POST /ph/bff-api/user/common_login?_ver=1.1.8&_lang=en HTTP/2
+host: m.shein.com
+smdeviceid: WHJMrwNw1k/E+z84...
+timezone: GMT+8
+x-cs-random: 13d0ed2175cf...
+x-gw-auth: a=xjqHR52UWJdjKJ0...
+armortoken: T1_3.11.1_i7HCNI8...
+x-csrf-token: nEwWL2dn-fQU9...
+x-oest: MEZBMTgwNUFf...
+x-ad-flag: 8FkZa3NuCnoO...
+cookie: armorUuid=20260217...
+cookie: AT=MDEwMDE.eyJiIjo3...
+cookie: sessionID_shein_m_pwa=s%3A5R19...
+cookie: language=ph
+
+------WebKitFormBoundaryq7ZWsZOMvdDQmpS8
+Content-Disposition: form-data; name=&quot;email&quot;
+
+your@email.com
+------WebKitFormBoundaryq7ZWsZOMvdDQmpS8
+Content-Disposition: form-data; name=&quot;password&quot;
+
+YourPassword123
+------WebKitFormBoundaryq7ZWsZOMvdDQmpS8--"></textarea>
+    </div>
+    <div class="row">
+      <button class="btn bp" onclick="parseAll()">⚡ Parse Request</button>
+      <button class="btn bgh bsm" onclick="loadSample()">📌 Load Example</button>
+      <button class="btn bgh bsm" onclick="document.getElementById('rawAll').value=''">🗑 Clear</button>
+    </div>
+  </div>
+
+  <div class="card" id="pc" style="display:none">
+    <div class="ch"><div class="ci ci-g">✓</div><span class="ct">Parsed Fields</span><div class="cb" id="pcount"></div></div>
+    <div class="fgrid" id="fg"></div>
+  </div>
+
+  <div class="sl">Edit / Override Fields</div>
+  <div class="g2">
+    <div class="card">
+      <div class="ch"><div class="ci ci-r">🔑</div><span class="ct">Token Fields</span></div>
+      <div class="fr"><label>x-csrf-token</label><input type="text" id="fc"></div>
+      <div class="fr"><label>armortoken</label><input type="text" id="fa"></div>
+      <div class="fr"><label>x-gw-auth</label><input type="text" id="fg2"></div>
+      <div class="fr"><label>x-oest</label><input type="text" id="fo"></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ci ci-b">🌐</div><span class="ct">Device & Session</span></div>
+      <div class="fr"><label>x-ad-flag</label><input type="text" id="fad"></div>
+      <div class="fr"><label>x-cs-random</label><input type="text" id="fcr"></div>
+      <div class="fr"><label>smdeviceid</label><input type="text" id="fsm"></div>
+      <div class="fr"><label>Cookie (all combined)</label><input type="text" id="fck"></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card hlg">
+      <div class="ch"><div class="ci ci-g">👤</div><span class="ct">Login Credentials (from form body)</span></div>
+      <div class="fr"><label>Email</label><input type="email" id="fem" placeholder="auto-detected from multipart body"></div>
+      <div class="fr"><label>Password</label><input type="password" id="fpw" placeholder="auto-detected from multipart body"></div>
+      <div class="fr"><label>Biz UUID</label><input type="text" id="fbu" placeholder="E47571..."></div>
+      <p class="hint">✓ Auto-read from WebKitFormBoundary. Edit here or manage accounts in Step 2.</p>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ci ci-y">🌏</div><span class="ct">Region & Timezone</span></div>
+      <div class="fr"><label>Country Region (auto-detected)</label>
+        <select id="freg">
+          <option value="ph">Philippines (/ph)</option>
+          <option value="us">USA (/us)</option>
+          <option value="uk">UK (/uk)</option>
+          <option value="au">Australia (/au)</option>
+          <option value="ca">Canada (/ca)</option>
+          <option value="custom">Custom...</option>
+        </select>
+      </div>
+      <div class="fr" id="crrow" style="display:none"><label>Custom region code</label><input type="text" id="fcr2" placeholder="ph"></div>
+      <div class="fr"><label>Timezone</label><input type="text" id="ftz" value="GMT+8"></div>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn br" onclick="applyNext()">Apply & Continue → Step 2</button>
+  </div>
+</div>
+
+<!-- PANEL 2 -->
+<div class="panel" id="p2">
+  <div class="info">
+    <strong>Multi-Account:</strong> Script loops all accounts, running coupon collection for each. The first account is auto-imported from your pasted request. Passwords can be prompted at runtime in Termux (recommended) or stored inline.
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ci ci-p">👥</div><span class="ct">Account List</span><div class="cb" id="acc-ct"><span class="badge bpu">0 accounts</span></div></div>
+    <div id="acclist"></div>
+    <div class="row" style="margin-top:14px"><button class="btn bgh bsm" onclick="addAcc()">＋ Add Account</button></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ci ci-b">⚙️</div><span class="ct">Runtime Settings</span></div>
+    <div class="g2">
+      <div class="fr"><label>Password Handling in Termux</label>
+        <select id="lmode">
+          <option value="prompt">Prompt at runtime — type password in Termux (secure)</option>
+          <option value="args">Command-line args: python3 script.py email pass email pass</option>
+          <option value="env">Env vars: SHEIN_EMAILS / SHEIN_PASSWORDS</option>
+          <option value="inline">Inline in script (testing only — not secure)</option>
+        </select>
+      </div>
+      <div class="fr"><label>Delay Between Accounts (sec)</label><input type="text" id="fad2" value="5"></div>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn bgh bsm" onclick="gs(1)">← Back</button>
+    <button class="btn bp" onclick="gs(3)">Next: Coupon Codes →</button>
+  </div>
+</div>
+
+<!-- PANEL 3 -->
+<div class="panel" id="p3">
+  <div class="card">
+    <div class="ch"><div class="ci ci-g">🎟️</div><span class="ct">Coupon Codes — one per line</span></div>
+    <div class="fr">
+      <textarea class="lg" id="fcodes">phsf021210
+phsf021209
+phsf021208
+phsf021207
+phsf021206
+phsf021205</textarea>
+      <p class="hint">Each line = one coupon code, collected in order with a delay.</p>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ch"><div class="ci ci-y">📦</div><span class="ct">Package Settings</span></div>
+      <div class="fr"><label>Coupon Package ID</label><input type="text" id="fpkg" value="17135535"></div>
+      <div class="fr"><label>Scene</label><input type="text" id="fsc" value="home"></div>
+      <div class="fr"><label>API Endpoint Path</label><input type="text" id="fap" value="/bff-api/promotion/coupon/bind_coupon"></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ci ci-b">⏱️</div><span class="ct">Timing & Retry</span></div>
+      <div class="fr"><label>Delay Between Codes (sec)</label><input type="text" id="fcd" value="2"></div>
+      <div class="fr"><label>Request Timeout (sec)</label><input type="text" id="fto" value="15"></div>
+      <div class="fr"><label>Retry on Failure</label>
+        <select id="fret">
+          <option value="0">No retry</option>
+          <option value="1">Retry once</option>
+          <option value="2">Retry twice</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn bgh bsm" onclick="gs(2)">← Back</button>
+    <button class="btn br" onclick="genScript()">⚙️ Generate Script →</button>
+  </div>
+</div>
+
+<!-- PANEL 4 -->
+<div class="panel" id="p4">
+  <div class="card">
+    <div class="ch">
+      <div class="ci ci-p">📄</div>
+      <span class="ct">Generated Python Script</span>
+      <div class="cb"><span class="badge bg" id="ob" style="display:none">✓ Ready</span></div>
+    </div>
+    <div class="ow">
+      <pre class="cbox" id="co"># Generate your script in Step 3 first.</pre>
+      <button class="cpbtn" id="cpb" onclick="copyScript()">Copy</button>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn bg_" onclick="dlScript()">⬇ Download .py</button>
+      <button class="btn bgh bsm" onclick="gs(3)">← Back</button>
+      <button class="btn bgh bsm" onclick="gs(1)">↩ Start Over</button>
+    </div>
+    <p class="hint" style="margin-top:12px">Termux: <code style="color:var(--green);background:rgba(34,217,138,.08);padding:2px 8px;border-radius:5px">pip install requests &amp;&amp; python3 shein_coupon_collector.py</code></p>
+  </div>
+</div>
+
+</div>
+
+<div class="toast" id="toast"><span id="ti">✓</span><span id="tm">Done</span></div>
+
+<script>
+const S={tok:{csrf:'',armor:'',gwa:'',oest:'',adf:'',csr:'',smd:'',ck:''},log:{em:'',pw:'',biz:''},accs:[],reg:'ph',tz:'GMT+8'};
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('freg').addEventListener('change',function(){
+    document.getElementById('crrow').style.display=this.value==='custom'?'block':'none';
+  });
+  renderAccs();
+});
+
+function gs(n){
+  for(let i=1;i<=4;i++){
+    document.getElementById('p'+i).classList.toggle('active',i===n);
+    document.getElementById('sb'+i).classList.toggle('active',i===n);
+  }
+}
+
+function parseAll(){
+  const raw=document.getElementById('rawAll').value;
+  if(!raw.trim()){toast('Paste the raw request first',false);return;}
+
+  let hBlock=raw,bBlock='';
+  const bi=raw.indexOf('------WebKitFormBoundary');
+  if(bi!==-1){hBlock=raw.substring(0,bi);bBlock=raw.substring(bi);}
+
+  const hdrs={};const cks=[];
+  hBlock.split('\n').forEach(line=>{
+    line=line.trim();
+    if(!line)return;
+    if(/^(POST|GET|PUT|DELETE)\s+\//i.test(line))return;
+    const ci=line.indexOf(':');
+    if(ci<1)return;
+    const k=line.substring(0,ci).trim().toLowerCase();
+    const v=line.substring(ci+1).trim();
+    if(k==='cookie')cks.push(v);
+    else hdrs[k]=v;
+  });
+
+  const fullCk=cks.join('; ');
+  S.tok.csrf=hdrs['x-csrf-token']||'';
+  S.tok.armor=hdrs['armortoken']||'';
+  S.tok.gwa=hdrs['x-gw-auth']||'';
+  S.tok.oest=hdrs['x-oest']||'';
+  S.tok.adf=hdrs['x-ad-flag']||'';
+  S.tok.csr=hdrs['x-cs-random']||'';
+  S.tok.smd=hdrs['smdeviceid']||'';
+  S.tok.ck=fullCk;
+  S.tz=hdrs['timezone']||'GMT+8';
+
+  if(bBlock){
+    const re=/Content-Disposition:\s*form-data;\s*name="([^"]+)"[\r\n]+[\r\n]+([^-]*?)(?=\r?\n?------|\s*$)/gi;
+    let m;
+    while((m=re.exec(bBlock))!==null){
+      const fn=m[1].trim(),fv=m[2].trim();
+      if(fn==='email')S.log.em=fv;
+      if(fn==='password')S.log.pw=fv;
+      if(fn==='biz_uuid')S.log.biz=fv;
+    }
+  }
+
+  const pm=raw.match(/\/([a-z]{2})\/bff-api\//);
+  if(pm){const r=pm[1];const sel=document.getElementById('freg');
+    if([...sel.options].some(o=>o.value===r)){sel.value=r;S.reg=r;}}
+
+  sf('fc',S.tok.csrf);sf('fa',S.tok.armor);sf('fg2',S.tok.gwa);
+  sf('fo',S.tok.oest);sf('fad',S.tok.adf);sf('fcr',S.tok.csr);
+  sf('fsm',S.tok.smd);sf('fck',S.tok.ck);
+  sf('fem',S.log.em);sf('fpw',S.log.pw);sf('fbu',S.log.biz);
+  sf('ftz',S.tz);
+
+  showPreview();
+  const f=Object.values(S.tok).filter(v=>v).length;
+  document.getElementById('pb').textContent=`✓ ${f}/8 tokens`+(S.log.em?' + credentials':'');
+  document.getElementById('pb').className='badge '+(f>=6?'bg':'by');
+  toast(`✓ Parsed ${f} tokens${S.log.em?' + login credentials':''}`);
+}
+
+function showPreview(){
+  const fields=[
+    ['CSRF Token',S.tok.csrf],['Armor Token',S.tok.armor],['GW Auth',S.tok.gwa],
+    ['OEST',S.tok.oest],['AD Flag',S.tok.adf],['CS Random',S.tok.csr],
+    ['SMDEVICE ID',S.tok.smd],['Cookie String',S.tok.ck],
+    ['Email',S.log.em],['Password',S.log.pw?'●●●●●●●●':''],['Biz UUID',S.log.biz]
+  ];
+  document.getElementById('fg').innerHTML=fields.map(([k,v])=>{
+    const ok=!!v,pv=v?(v.length>55?v.substring(0,55)+'…':v):'(not found)';
+    return`<div class="fp ${ok?'ok':'ms'}"><div class="fpdot ${ok?'ok':'ms'}"></div><div><div class="fpk">${k}</div><div class="fpv">${pv}</div></div></div>`;
+  }).join('');
+  const found=fields.filter(f=>f[1]).length;
+  document.getElementById('pcount').innerHTML=`<span class="badge bg">${found}/${fields.length} found</span>`;
+  document.getElementById('pc').style.display='block';
+}
+
+function applyNext(){
+  S.tok.csrf=gf('fc')||S.tok.csrf;S.tok.armor=gf('fa')||S.tok.armor;
+  S.tok.gwa=gf('fg2')||S.tok.gwa;S.tok.oest=gf('fo')||S.tok.oest;
+  S.tok.adf=gf('fad')||S.tok.adf;S.tok.csr=gf('fcr')||S.tok.csr;
+  S.tok.smd=gf('fsm')||S.tok.smd;S.tok.ck=gf('fck')||S.tok.ck;
+  S.log.em=gf('fem');S.log.pw=gf('fpw');S.log.biz=gf('fbu');
+  S.tz=gf('ftz')||'GMT+8';
+  const sel=document.getElementById('freg');
+  S.reg=sel.value==='custom'?(gf('fcr2')||'ph'):sel.value;
+  if(S.accs.length===0&&S.log.em){S.accs.push({em:S.log.em,pw:S.log.pw});toast(`✓ Auto-imported: ${S.log.em}`);}
+  renderAccs();gs(2);
+}
+
+function addAcc(){S.accs.push({em:'',pw:''});renderAccs();}
+function remAcc(i){S.accs.splice(i,1);renderAccs();}
+function renderAccs(){
+  const l=document.getElementById('acclist');
+  document.getElementById('acc-ct').innerHTML=`<span class="badge bpu">${S.accs.length} account${S.accs.length!==1?'s':''}</span>`;
+  if(!S.accs.length){l.innerHTML='<p style="color:var(--muted);font-size:12px;padding:12px 0;text-align:center">No accounts. Go back to Step 1 to auto-import, or click "+ Add Account".</p>';return;}
+  l.innerHTML=S.accs.map((a,i)=>`
+    <div class="ai">
+      <div><div class="aidx">Account ${i+1} — Email</div><input type="email" value="${esc(a.em)}" placeholder="your@email.com" oninput="S.accs[${i}].em=this.value"></div>
+      <div><div class="aidx">Password</div><input type="password" value="${esc(a.pw)}" placeholder="Blank = prompt at runtime" oninput="S.accs[${i}].pw=this.value"></div>
+      <button class="rmb" onclick="remAcc(${i})">✕</button>
+    </div>`).join('');
+}
+
+function genScript(){
+  const t=S.tok;
+  const reg=S.reg;
+  const base=`https://m.shein.com/${reg}`;
+  const ap=gf('fap')||'/bff-api/promotion/coupon/bind_coupon';
+  const url=base+ap;
+  const pkg=gf('fpkg')||'17135535';
+  const sc=gf('fsc')||'home';
+  const cd=gf('fcd')||'2';
+  const to=gf('fto')||'15';
+  const ad=gf('fad2')||'5';
+  const ret=parseInt(gf('fret'))||0;
+  const mode=document.getElementById('lmode').value;
+  const codes=document.getElementById('fcodes').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  const clist=codes.map(c=>`    "${c}"`).join(',\n');
+  const multi=S.accs.length>0;
+  const emails=S.accs.map(a=>`        "${a.em}"`).join(',\n');
+
+  let accSec='';
+  if(multi){
+    if(mode==='prompt'){
+      accSec=`
+import getpass
+
+# ─── ACCOUNTS ─────────────────────────────────────────────────────
+ACCOUNT_EMAILS = [
+${emails}
+]
+
+def build_accounts():
+    print("\\n" + "="*60)
+    print("  Enter passwords for each SHEIN account")
+    print("="*60)
+    accs = []
+    for em in ACCOUNT_EMAILS:
+        pw = getpass.getpass(f"  Password for {em}: ")
+        accs.append({"email": em, "password": pw})
+    print()
+    return accs
+
+ACCOUNTS = build_accounts()`;
+    }else if(mode==='args'){
+      accSec=`
+import argparse, getpass, sys
+
+# ─── ACCOUNTS (command-line) ───────────────────────────────────────
+# Usage: python3 shein_coupon_collector.py email1 pass1 email2 pass2
+parser = argparse.ArgumentParser()
+parser.add_argument("creds", nargs="*")
+args = parser.parse_args()
+
+BASE_EMAILS = [
+${emails}
+]
+
+def build_accounts():
+    creds = args.creds
+    accs = []
+    for i, em in enumerate(BASE_EMAILS):
+        pw = creds[i*2+1] if i*2+1 < len(creds) else getpass.getpass(f"  Password for {em}: ")
+        accs.append({"email": em, "password": pw})
+    return accs
+
+ACCOUNTS = build_accounts()`;
+    }else if(mode==='env'){
+      accSec=`
+import os, getpass
+
+# ─── ACCOUNTS (environment variables) ──────────────────────────────
+# export SHEIN_EMAILS="email1@x.com,email2@x.com"
+# export SHEIN_PASSWORDS="pass1,pass2"
+def build_accounts():
+    raw_e = os.environ.get("SHEIN_EMAILS","").strip()
+    raw_p = os.environ.get("SHEIN_PASSWORDS","").strip()
+    emails = [e.strip() for e in raw_e.split(",") if e.strip()] if raw_e else [
+${emails}
+    ]
+    pws = [p.strip() for p in raw_p.split(",") if p.strip()] if raw_p else []
+    accs = []
+    for i, em in enumerate(emails):
+        pw = pws[i] if i < len(pws) else getpass.getpass(f"  Password for {em}: ")
+        accs.append({"email": em, "password": pw})
+    return accs
+
+ACCOUNTS = build_accounts()`;
+    }else{
+      const inl=S.accs.map(a=>`    {"email": "${a.em}", "password": "${a.pw}"}`).join(',\n');
+      accSec=`
+# ─── ACCOUNTS (inline) ─────────────────────────────────────────────
+ACCOUNTS = [
+${inl}
+]`;
+    }
+  }
+
+  let tryB='';
+  if(ret>0){
+    tryB=`
+            for _att in range(${ret+1}):
+                try:
+                    r = requests.post(URL, params=PARAMS, json=payload, headers=headers, timeout=TIMEOUT)
+                    result = r.json()
+                    break
+                except Exception as _e:
+                    if _att < ${ret}:
+                        print(f"    ↩ Retry {_att+1}/${ret}...")
+                        time.sleep(2)
+                    else:
+                        raise _e`;
+  }else{
+    tryB=`
+            r = requests.post(URL, params=PARAMS, json=payload, headers=headers, timeout=TIMEOUT)
+            result = r.json()`;
+  }
+
+  let mainB='';
+  if(multi){
+    mainB=`
+# ─── MAIN LOOP ─────────────────────────────────────────────────────
+# ⚠ Session tokens belong to one login. For true per-account isolation,
+#   re-paste fresh tokens per account and re-run.
+for idx, account in enumerate(ACCOUNTS):
+    print(f"\\n{'='*60}")
+    print(f"  Account {idx+1}/{len(ACCOUNTS)}: {account['email']}")
+    print(f"{'='*60}")
+    collect_coupons(CODES, HEADERS, URL, PARAMS)
+    if idx < len(ACCOUNTS) - 1:
+        print(f"\\n  ⏳ Waiting ${ad}s before next account...")
+        time.sleep(ACCOUNT_DELAY)
+
+print("\\n" + "="*60)
+print("  ✅ All accounts done!")
+print("="*60 + "\\n")`;
+  }else{
+    mainB=`
+# ─── RUN ───────────────────────────────────────────────────────────
+collect_coupons(CODES, HEADERS, URL, PARAMS)`;
+  }
+
+  const now=new Date().toLocaleString().substring(0,35);
+  const script=`#!/usr/bin/env python3
+"""
+╔══════════════════════════════════════════════════════════╗
+║       SHEIN Coupon Auto-Collector                        ║
+║       Region   : ${reg.padEnd(39)}║
+║       Generated: ${now.padEnd(38)}║
+╚══════════════════════════════════════════════════════════╝
+
+REQUIREMENTS:   pip install requests
+RUN IN TERMUX:  python3 shein_coupon_collector.py
+"""
+
+import requests
+import uuid
+import time
+import sys
+${multi&&mode!=='inline'?'import getpass':''}
+
+# ═══════════════════════════════════════════════════════════
+#  SESSION TOKENS  (extracted from your raw HTTP/2 request)
+#  ⚠  Tokens expire — re-paste from DevTools when they stop working.
+# ═══════════════════════════════════════════════════════════
+CSRF_TOKEN  = "${t.csrf}"
+ARMOR_TOKEN = "${t.armor}"
+GW_AUTH     = "${t.gwa}"
+OEST        = "${t.oest}"
+AD_FLAG     = "${t.adf}"
+CS_RANDOM   = "${t.csr}"
+SMDEVICE_ID = "${t.smd}"
+COOKIES     = "${t.ck}"
+
+# ═══════════════════════════════════════════════════════════
+#  COUPON CODES
+# ═══════════════════════════════════════════════════════════
+CODES = [
+${clist}
+]
+
+# ═══════════════════════════════════════════════════════════
+#  CONFIG
+# ═══════════════════════════════════════════════════════════
+URL           = "${url}"
+PARAMS        = {"_ver": "1.1.8", "_lang": "en"}
+CODE_DELAY    = ${cd}      # seconds between each coupon code
+ACCOUNT_DELAY = ${ad}      # seconds between accounts
+TIMEOUT       = ${to}      # request timeout in seconds
+COUPON_PKG_ID = "${pkg}"
+
+HEADERS = {
+    "Content-Type":  "application/json",
+    "smdeviceid":    SMDEVICE_ID,
+    "x-cs-random":   CS_RANDOM,
+    "x-gw-auth":     GW_AUTH,
+    "armortoken":    ARMOR_TOKEN,
+    "x-csrf-token":  CSRF_TOKEN,
+    "x-oest":        OEST,
+    "x-ad-flag":     AD_FLAG,
+    "Cookie":        COOKIES,
+    "user-agent":    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36",
+    "accept":        "application/json, text/plain, */*",
+    "timezone":      "${S.tz}",
+}
+${accSec}
+
+# ═══════════════════════════════════════════════════════════
+#  COLLECTOR FUNCTION
+# ═══════════════════════════════════════════════════════════
+def collect_coupons(codes, headers, url, params):
+    print("\\n" + "─" * 60)
+    print("  Collecting vouchers ONE BY ONE...")
+    print("─" * 60)
+    ok_count = 0
+    fail_count = 0
+
+    for code in codes:
+        print(f"\\n  ▶  Trying: {code}")
+        payload = {
+            "scene": "${sc}",
+            "idempotentCode": str(uuid.uuid4()),
+            "couponPackages": [{
+                "couponPackageId": COUPON_PKG_ID,
+                "couponCodes": code
+            }]
+        }
+        try:${tryB}
+
+            rc  = str(result.get("code", ""))
+            msg = result.get("msg", "Unknown error")
+
+            if rc == "0":
+                print(f"     ✅  SUCCESS — {code}")
+                ok_count += 1
+            elif "already" in msg.lower() or "duplicate" in msg.lower():
+                print(f"     ⚠   Already collected — {msg}")
+                fail_count += 1
+            else:
+                print(f"     ❌  Failed — {msg}")
+                fail_count += 1
+
+        except requests.exceptions.Timeout:
+            print(f"     ❌  Timeout — {code}")
+            fail_count += 1
+        except requests.exceptions.ConnectionError:
+            print(f"     ❌  Connection error — {code}")
+            fail_count += 1
+        except Exception as e:
+            print(f"     ❌  Error — {e}")
+            fail_count += 1
+
+        time.sleep(CODE_DELAY)
+
+    print("\\n" + "─" * 60)
+    print(f"  Results: ✅ {ok_count} collected   ❌ {fail_count} failed   total: {len(codes)}")
+    print(f"  My Coupons: ${base}/user/coupon")
+    print("─" * 60)
+
+${mainB}
+`;
+
+  document.getElementById('co').textContent=script;
+  document.getElementById('ob').style.display='inline-flex';
+  document.getElementById('sb').textContent='✓ Script ready';
+  document.getElementById('sb').className='badge bg';
+  document.getElementById('sn4').textContent='✓';
+  document.getElementById('sb4').classList.add('done');
+  gs(4);toast('✓ Script generated!');
+}
+
+function copyScript(){
+  const code=document.getElementById('co').textContent;
+  navigator.clipboard.writeText(code).then(()=>{
+    const b=document.getElementById('cpb');
+    b.textContent='Copied!';b.classList.add('ok');
+    toast('✓ Copied!');
+    setTimeout(()=>{b.textContent='Copy';b.classList.remove('ok');},2200);
+  });
+}
+function dlScript(){
+  const code=document.getElementById('co').textContent;
+  if(!code.includes('import requests')){toast('Generate the script first!',false);return;}
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([code],{type:'text/plain'}));
+  a.download='shein_coupon_collector.py';a.click();
+  toast('✓ Downloaded shein_coupon_collector.py');
+}
+
+function loadSample(){
+  document.getElementById('rawAll').value=`POST /ph/bff-api/user/common_login?_ver=1.1.8&_lang=en HTTP/2
+host: m.shein.com
+smdeviceid: WHJMrwNw1k/E+z84j8tgt0Zj648ulZE7D16WQ0CWU+b9tXahWwmX8OB1NzRPCXVpmXp7nuWATD/eR4xkwXEA2IwDtPogZB9rSdCW1tldyDzmQI99+chXEiv8sGiv4NjMh9lCUKKcsmkSqmJzoPeggwzYmmmXo8LlTkQE5YcNLqNriNYPfoOP/bhemZjezQQufFRRuSg/X1FURTkAd7H/eWgq1wQa1jio3kM+t1jGDSZ2IrNNUw4ryH7IGDE1UnHW4RhJWgkx4CoeE5wW1WhAWLw==1487582755342
+timezone: GMT+8
+x-cs-random: 13d0ed2175cf1d6c6299f602c8364ca689db8bf74bfd4fb9e23c3306b3d397d53d4c235e1ad76e230b2b3308e631a8aa5eb454d533ca2f0639ff362a86c34bb40c3e97995ed97
+x-gw-auth: a=xjqHR52UWJdjKJ0x6QrCsus66rNXR9@2.0.13&b=1771313126367&d=06942fbc37be6a98b8dee877d03ae8f6&e=QzN86NTE1ZWEyZDc4ZWFiYmZkMzM4NmI3NDBkYTM2MDFmNmY2MmQ2NjdlNzJlZmI0OGVlOGRkZjc0ODkxMzEzN2U1NA%3D%3D
+armortoken: T1_3.11.1_i7HCNI8sWSUN4Wsff-xWfEOoJD3pv9YcwF73wErP829FEEL_qLQIzpUqwviWSgtMRFEJ8EX-DJWmk5Hj3C7w7N1h90U00xtWT4K0_h0ioHxMfZo3qITZ7K14Iz_TTi8NxF8S6mVWH6zKftlYA9VlVJymbvCjb3q1JdiY70cwwN9sLlcLLf5y9NqBMDMzwSNY_1771313095208
+x-csrf-token: nEwWL2dn-fQU9wJx3RD0XK-wytnHTOHqXx2Y
+x-oest: MEZBMTgwNUFfOTNDNV98MTc3MTMxMzEyNjM1NnwwMkI0X0QyRDhfOTk1MDU5NjAyQUI5
+x-ad-flag: 8FkZa3NuCnoO+IBsqSDbVS0ujpVi/IXf//kOjWMsgnOZ0k+h6+rK67aH0c1E5efGgWYq61YJe9rvWC5xPj7ZVVYoP3i9GVpBfVkWfa8EsrsGa2KgaixOSZmJfGKy6YI874yU0pb2l85B3RSMhSMlbQ==
+cookie: armorUuid=20260217145505ecd0fd391b04464cacdf7d25af9bfcc8002149cdafa2110600
+cookie: _cfuvid=bxI4oKnZyksi8QphhaVw2TQCF3CwGITyweNvykk2mjs-1771311305488-0.0.1.1-604800000
+cookie: AT=MDEwMDE.eyJiIjo3LCJnIjoxNzcxMzEzMDkyLCJyIjoidUY1ZkpTIiwidCI6MX0.0fb1a14354260415
+cookie: sessionID_shein_m_pwa=s%3A5R19UKmGVTXt5LgXobzJsgB2UgX2sced.G3v%2BgMdLGH7EZ%2Bu5FxrQS2K7CSUBq0txT3drkN6oF6Q
+cookie: cf_clearance=P.affEqrw2L1.Z2S2ZWu73duxxFA8tDu2pjNS87nMqo-1771313095
+cookie: language=ph
+
+------WebKitFormBoundaryq7ZWsZOMvdDQmpS8
+Content-Disposition: form-data; name="email"
+
+debiinsukram23@gmail.com
+------WebKitFormBoundaryq7ZWsZOMvdDQmpS8
+Content-Disposition: form-data; name="password"
+
+Shein123
+------WebKitFormBoundaryq7ZWsZOMvdDQmpS8
+Content-Disposition: form-data; name="biz_uuid"
+
+E4757106829273412992
+------WebKitFormBoundaryq7ZWsZOMvdDQmpS8--`;
+  parseAll();toast('✓ Sample loaded & parsed');
+}
+
+function gf(id){return(document.getElementById(id)||{}).value?.trim()||'';}
+function sf(id,v){const el=document.getElementById(id);if(el)el.value=v||'';}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+let tt;
+function toast(msg,ok=true){
+  const el=document.getElementById('toast');
+  document.getElementById('ti').textContent=ok?'✓':'⚠';
+  document.getElementById('tm').textContent=msg;
+  el.style.borderColor=ok?'rgba(34,217,138,.4)':'rgba(232,48,74,.4)';
+  el.style.color=ok?'var(--green)':'#ff6b6b';
+  el.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),3200);
+}
+</script>
+</body>
+</html>
